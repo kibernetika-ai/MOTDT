@@ -163,7 +163,7 @@ def eval_video(video_file,
             online_im = vis.plot_tracking(frame, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time)
 
-            logger.info(f'draw {len(det_tlwhs)} bboxes')
+            # logger.info(f'draw {len(det_tlwhs)} bboxes')
             for bbox in det_tlwhs:
                 cv2.rectangle(
                     online_im,
@@ -179,7 +179,7 @@ def eval_video(video_file,
                 cv2.imshow('online_im', online_im)
             if save_dir is not None:
                 save_to = os.path.join(save_dir, '{:05d}.jpg'.format(frame_id))
-                logger.info(f'save data to {save_to}')
+                # logger.info(f'save data to {save_to}')
                 cv2.imwrite(save_to, online_im)
 
             # logger.info(f'wait key {wait_time}')
