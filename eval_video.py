@@ -136,15 +136,16 @@ def eval_video(video_file,
                 logger.info('Processing frame {} (iteration {}) ({:.2f} fps)'.format(
                     frame_count, iter_count, 1. / max(1e-5, timer.average_time)))
 
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             # logger.info(f'frame {frame_count} read')
 
             det_tlwhs, det_scores = detect_persons_tf(person_detect_driver, frame, threshold=.5)
-            # logger.info(f'detected {len(det_tlwhs)} boxes')
+            logger.info(f'frame {frame_count}: detected {len(det_tlwhs)} boxes')
 
             # run tracking
             timer.tic()
             online_targets = tracker.update(frame, det_tlwhs, None)
+            logger.info(f'frame {frame_count}: {len(online_targets)} online targets')
             online_tlwhs = []
             online_ids = []
             for t in online_targets:
@@ -158,6 +159,7 @@ def eval_video(video_file,
             frame_id = frame_count  # or make it incremental?
             results.append((frame_id + 1, online_tlwhs, online_ids))
 
+            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             online_im = vis.plot_tracking(frame, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time)
             # logger.info(f'tracking plotted')
@@ -165,8 +167,9 @@ def eval_video(video_file,
                 # logger.info(f'show image')
                 cv2.imshow('online_im', online_im)
             if save_dir is not None:
-                # logger.info(f'save data')
-                cv2.imwrite(os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), online_im)
+                save_to = os.path.join(save_dir, '{:05d}.jpg'.format(frame_id))
+                logger.info(f'save data to {save_to}')
+                cv2.imwrite(save_to, online_im)
 
             # logger.info(f'wait key {wait_time}')
             key = cv2.waitKey(wait_time)
