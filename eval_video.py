@@ -199,7 +199,7 @@ def eval_video(video_file,
                 cv2.imwrite(save_to, online_im)
 
             if video_writer is not None:
-                video_writer.write(online_im)
+                video_writer.write(cv2.resize(online_im, (width, height)))
 
             # logger.info(f'wait key {wait_time}')
             key = cv2.waitKey(wait_time)
