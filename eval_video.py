@@ -91,13 +91,15 @@ def eval_video(video_file,
                 person_detect_model='./data/faster_rcnn_resnet101_coco_2018_01_28/saved_model',
                 squeezenet_ckpt=None,
                 googlenet_ckpt=None,
+                frames_limit=None,
                 save_dir=None,
                 show_image=True
                ):
     logger.setLevel(logging.INFO)
 
     cap = cv2.VideoCapture(video_file)
-    frame_count = 0
+    frame_count = -1
+    iter_count = 0
     
     tracker = OnlineTracker(squeezenet_ckpt=squeezenet_ckpt, googlenet_ckpt=googlenet_ckpt)
     timer = Timer()
@@ -115,22 +117,30 @@ def eval_video(video_file,
     try:
         while True:
 
+            frame_count += 1
+            if frames_limit is not None and frame_count > frames_limit:
+                logger.warn('frames limit {} reached'.format(frames_limit))
+                break
+            if frame_count % each_frame > 0:
+                continue
+
             # read each X bgr frame
             frame = cap.read()  # bgr
-            if frame_count % each_frame > 0:
-                frame_count += 1
-                continue
             if isinstance(frame, tuple):
                 frame = frame[1]
             if frame is None:
                 logger.warn('video capturing finished')
                 break
 
+            if iter_count % 20 == 0:
+                logger.info('Processing frame {} (iteration {}) ({:.2f} fps)'.format(
+                    frame_count, iter_count, 1. / max(1e-5, timer.average_time)))
+
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            logger.info(f'frame {frame_count} read')
+            # logger.info(f'frame {frame_count} read')
 
             det_tlwhs, det_scores = detect_persons_tf(person_detect_driver, frame, threshold=.5)
-            logger.info(f'detected {len(det_tlwhs)} boxes')
+            # logger.info(f'detected {len(det_tlwhs)} boxes')
 
             # run tracking
             timer.tic()
@@ -142,7 +152,7 @@ def eval_video(video_file,
                 online_ids.append(t.track_id)
             timer.toc()
 
-            logger.info(f'tracker done')
+            # logger.info(f'tracker done')
 
             # save results
             frame_id = frame_count  # or make it incremental?
@@ -150,15 +160,15 @@ def eval_video(video_file,
 
             online_im = vis.plot_tracking(frame, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time)
-            logger.info(f'tracking plotted')
+            # logger.info(f'tracking plotted')
             if show_image:
-                logger.info(f'show image')
+                # logger.info(f'show image')
                 cv2.imshow('online_im', online_im)
             if save_dir is not None:
-                logger.info(f'save data')
+                # logger.info(f'save data')
                 cv2.imwrite(os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), online_im)
 
-            logger.info(f'wait key {wait_time}')
+            # logger.info(f'wait key {wait_time}')
             key = cv2.waitKey(wait_time)
             key = chr(key % 128).lower()
             if key in [ord('q'), 202, 27]:  # 'q' or Esc or 'q' in russian layout
@@ -168,8 +178,8 @@ def eval_video(video_file,
             elif key == 'a':
                 wait_time = int(not wait_time)
 
-            frame_count += 1
-            logger.info(f'done')
+            iter_count += 1
+            # logger.info(f'done')
 
     except (KeyboardInterrupt, SystemExit) as e:
         logger.info('Caught %s: %s' % (e.__class__.__name__, e))
@@ -286,6 +296,18 @@ if __name__ == '__main__':
         default=None,
         help='Googlenet path',
     )
+    parser.add_argument(
+        '--frames_limit',
+        type=int,
+        default=None,
+        help='Frames (whole video, not only processed) limit',
+    )
+    parser.add_argument(
+        '--save_dir',
+        type=int,
+        default=None,
+        help='Save result to dir',
+    )
     args = parser.parse_args()
 
     # import fire
@@ -303,6 +325,8 @@ if __name__ == '__main__':
         person_detect_model=args.person_detect_model,
         squeezenet_ckpt=args.squeezenet_ckpt,
         googlenet_ckpt=args.googlenet_ckpt,
+        frames_limit=args.frames_limit,
+        save_dir=args.save_dir,
         show_image=False,
     )
 
