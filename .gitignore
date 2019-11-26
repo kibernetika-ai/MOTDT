@@ -108,3 +108,4 @@ venv.bak/
 *.o
 data
 .idea
+assets
