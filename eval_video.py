@@ -163,9 +163,10 @@ def eval_video(video_file,
             online_im = vis.plot_tracking(frame, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time)
 
+            logger.info(f'draw {len(det_tlwhs)} bboxes')
             for bbox in det_tlwhs:
                 cv2.rectangle(
-                    frame,
+                    online_im,
                     (bbox[0], bbox[1]),  # (left, top)
                     (bbox[2], bbox[3]),  # (right, bottom)
                     (0, 255, 0),
