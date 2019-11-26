@@ -98,14 +98,24 @@ def eval_video(video_file,
                 googlenet_ckpt=None,
                 frames_limit=None,
                 save_dir=None,
+                video_output=None,
                 show_image=True
                ):
     logger.setLevel(logging.INFO)
 
     cap = cv2.VideoCapture(video_file)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
     frame_count = -1
     iter_count = 0
-    
+
+    video_writer = None
+    if video_output is not None:
+        video_writer = cv2.VideoWriter(video_output, fourcc, fps / each_frame, frameSize=(width, height))
+
     tracker = OnlineTracker(squeezenet_ckpt=squeezenet_ckpt, googlenet_ckpt=googlenet_ckpt)
     timer = Timer()
     results = []
@@ -187,6 +197,9 @@ def eval_video(video_file,
                 # logger.info(f'save data to {save_to}')
                 cv2.imwrite(save_to, online_im)
 
+            if video_writer is not None:
+                video_writer.write(online_im)
+
             # logger.info(f'wait key {wait_time}')
             key = cv2.waitKey(wait_time)
             key = chr(key % 128).lower()
@@ -204,7 +217,9 @@ def eval_video(video_file,
         logger.info('Caught %s: %s' % (e.__class__.__name__, e))
     finally:
         cv2.destroyAllWindows()
-
+        if video_writer is not None:
+            logger.info('Written video to %s.' % video_output)
+            video_writer.release()
 
     # save results
     data_root = os.path.dirname(video_file)
@@ -333,6 +348,12 @@ if __name__ == '__main__':
         default=None,
         help='Save result to dir',
     )
+    parser.add_argument(
+        '--video_output',
+        type=str,
+        default=None,
+        help='Save result video to dir',
+    )
     args = parser.parse_args()
 
     # import fire
@@ -353,6 +374,7 @@ if __name__ == '__main__':
         googlenet_ckpt=args.googlenet_ckpt,
         frames_limit=args.frames_limit,
         save_dir=args.save_dir,
+        video_output=args.video_output,
         show_image=False,
     )
 
