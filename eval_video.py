@@ -140,12 +140,12 @@ def eval_video(video_file,
             # logger.info(f'frame {frame_count} read')
 
             det_tlwhs, det_scores = detect_persons_tf(person_detect_driver, frame, threshold=.5)
-            logger.info(f'frame {frame_count}: detected {len(det_tlwhs)} boxes')
+            # logger.info(f'frame {frame_count}: detected {len(det_tlwhs)} boxes')
 
             # run tracking
             timer.tic()
             online_targets = tracker.update(frame, det_tlwhs, None)
-            logger.info(f'frame {frame_count}: {len(online_targets)} online targets')
+            # logger.info(f'frame {frame_count}: {len(online_targets)} online targets')
             online_tlwhs = []
             online_ids = []
             for t in online_targets:
@@ -170,7 +170,7 @@ def eval_video(video_file,
                     (bbox[0], bbox[1]),  # (left, top)
                     (bbox[2], bbox[3]),  # (right, bottom)
                     (0, 255, 0),
-                    2,
+                    1,
                 )
 
             # logger.info(f'tracking plotted')
@@ -317,6 +317,12 @@ if __name__ == '__main__':
         help='Frames (whole video, not only processed) limit',
     )
     parser.add_argument(
+        '--each_frame',
+        type=int,
+        default=5,
+        help='Process each X frame',
+    )
+    parser.add_argument(
         '--save_dir',
         type=str,
         default=None,
@@ -336,6 +342,7 @@ if __name__ == '__main__':
 
     eval_video(
         video_file=args.video_source,
+        each_frame=args.each_frame,
         person_detect_model=args.person_detect_model,
         squeezenet_ckpt=args.squeezenet_ckpt,
         googlenet_ckpt=args.googlenet_ckpt,
