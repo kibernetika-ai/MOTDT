@@ -106,8 +106,9 @@ def eval_video(video_file,
 
     drv = driver.load_driver('tensorflow')
 
-    logger.info(f'init person detection driver')
+    logger.info(f'init person detection driver...')
     person_detect_driver = drv()
+    logger.info(f'loading person detection model {person_detect_model}...')
     person_detect_driver.load_model(person_detect_model)
     logger.info(f'person detection model {person_detect_model} loaded')
 
@@ -262,7 +263,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--person_detect_model',
         type=str,
-        default='./data/faster_rcnn_resnet101_coco_2018_01_28/saved_mode',
+        default='./data/faster_rcnn_resnet101_coco_2018_01_28/saved_model',
         help='Person detection model',
     )
     parser.add_argument(
