@@ -114,6 +114,7 @@ def eval_video(video_file,
 
     video_writer = None
     if video_output is not None:
+        logger.info('Write video to %s ...' % video_output)
         video_writer = cv2.VideoWriter(video_output, fourcc, fps / each_frame, frameSize=(width, height))
 
     tracker = OnlineTracker(squeezenet_ckpt=squeezenet_ckpt, googlenet_ckpt=googlenet_ckpt)
