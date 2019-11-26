@@ -89,6 +89,7 @@ def detect_persons_tf(drv, frame, threshold = .5):
 def eval_video(video_file,
                each_frame=5,
                person_detect_model='./data/faster_rcnn_resnet101_coco_2018_01_28/saved_model',
+               squeezenet_ckpt=None,
                save_dir=None,
                show_image=True,
                ):
@@ -97,7 +98,7 @@ def eval_video(video_file,
     cap = cv2.VideoCapture(video_file)
     frame_count = 0
     
-    tracker = OnlineTracker()
+    tracker = OnlineTracker(squeezenet_ckpt=squeezenet_ckpt)
     timer = Timer()
     results = []
     wait_time = 1
@@ -253,9 +254,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'video-source',
+        'video_source',
         type=str,
-        required=True,
         help='Video source',
     )
     parser.add_argument(
@@ -263,6 +263,12 @@ if __name__ == '__main__':
         type=str,
         default='./data/faster_rcnn_resnet101_coco_2018_01_28/saved_mode',
         help='Person detection model',
+    )
+    parser.add_argument(
+        '--squeezenet_ckpt',
+        type=str,
+        default=None,
+        help='Squeezenet path',
     )
     args = parser.parse_args()
 
@@ -279,6 +285,7 @@ if __name__ == '__main__':
     eval_video(
         video_file=args.video_source,
         person_detect_model=args.person_detect_model,
+        squeezenet_ckpt=args.squeezenet_ckpt,
         show_image=False,
     )
 

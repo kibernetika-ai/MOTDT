@@ -180,7 +180,8 @@ class STrack(BaseTrack):
 
 class OnlineTracker(object):
 
-    def __init__(self, min_cls_score=0.4, min_ap_dist=0.64, max_time_lost=30, use_tracking=True, use_refind=True):
+    def __init__(self, min_cls_score=0.4, min_ap_dist=0.64, max_time_lost=30, use_tracking=True, use_refind=True,
+                 squeezenet_ckpt=None):
 
         self.min_cls_score = min_cls_score
         self.min_ap_dist = min_ap_dist
@@ -194,7 +195,7 @@ class OnlineTracker(object):
 
         self.use_refind = use_refind
         self.use_tracking = use_tracking
-        self.classifier = PatchClassifier()
+        self.classifier = PatchClassifier(ckpt=squeezenet_ckpt)
         self.reid_model = load_reid_model()
 
         self.frame_id = 0

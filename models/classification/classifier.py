@@ -39,10 +39,11 @@ def crop_with_factor(im, dest_size, factor=32, pad_val=0, basedon='min'):
 
 
 class PatchClassifier(object):
-    def __init__(self, gpu=0):
+    def __init__(self, gpu=0, ckpt=None):
         self.gpu = gpu
 
-        ckpt = 'data/squeezenet_small40_coco_mot16_ckpt_10.h5'
+        if ckpt is None:
+            ckpt = 'data/squeezenet_small40_coco_mot16_ckpt_10.h5'
         model = CLSModel(extractor='squeezenet')
 
         # from mcmtt.network.experiments.rfcn_cls2 import Model as CLSModel
