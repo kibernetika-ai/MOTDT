@@ -222,6 +222,8 @@ def eval_video(video_file,
             logger.info('Written video to %s.' % video_output)
             video_writer.release()
 
+    return
+
     # save results
     data_root = os.path.dirname(video_file)
     seq = os.path.splitext(os.path.basename(video_file))[0]
