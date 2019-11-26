@@ -118,6 +118,7 @@ def eval_video(video_file,
             # read each X bgr frame
             frame = cap.read()  # bgr
             if frame_count % each_frame > 0:
+                frame_count += 1
                 continue
             if isinstance(frame, tuple):
                 frame = frame[1]
