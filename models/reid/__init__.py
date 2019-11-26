@@ -10,10 +10,11 @@ from models import net_utils
 from models.reid.image_part_aligned import Model
 
 
-def load_reid_model():
+def load_reid_model(ckpt=None):
     model = Model(n_parts=8)
     model.inp_size = (80, 160)
-    ckpt = 'data/googlenet_part8_all_xavier_ckpt_56.h5'
+    if ckpt is None:
+        ckpt = 'data/googlenet_part8_all_xavier_ckpt_56.h5'
 
     net_utils.load_net(ckpt, model)
     logger.info('Load ReID model from {}'.format(ckpt))
