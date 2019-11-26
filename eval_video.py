@@ -304,7 +304,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--save_dir',
-        type=int,
+        type=str,
         default=None,
         help='Save result to dir',
     )
