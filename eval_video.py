@@ -82,8 +82,13 @@ def detect_persons_tf(drv, frame, threshold = .5):
     boxes[:, 1] *= frame.shape[1]
     boxes[:, 2] *= frame.shape[0]
     boxes[:, 3] *= frame.shape[1]
-    boxes[:,[0, 1, 2, 3]] = boxes[:,[1, 0, 3, 2]].astype(int)
-    return boxes, scores  # , classes  # , masks
+    boxes[:,[0, 1, 2, 3]] = boxes[:,[1, 0, 3, 2]] # .astype(int)
+
+    tlwhs = []
+    for box in boxes:
+        tlwhs.append([box[0], box[1], box[2] - box[0], box[3] - box[1]])
+
+    return tlwhs, scores  # , classes  # , masks
 
 
 def eval_video(video_file,
@@ -164,11 +169,11 @@ def eval_video(video_file,
                                           fps=1. / timer.average_time)
 
             # logger.info(f'draw {len(det_tlwhs)} bboxes')
-            for bbox in det_tlwhs:
+            for tlwh in det_tlwhs:
                 cv2.rectangle(
                     online_im,
-                    (bbox[0], bbox[1]),  # (left, top)
-                    (bbox[2], bbox[3]),  # (right, bottom)
+                    (tlwh[0], tlwh[1]),  # (left, top)
+                    (tlwh[0] + tlwh[2], tlwh[1] + tlwh[3]),  # (right, bottom)
                     (0, 255, 0),
                     1,
                 )
