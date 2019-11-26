@@ -141,17 +141,23 @@ def eval_video(video_file,
                 online_ids.append(t.track_id)
             timer.toc()
 
+            logger.info(f'tracker done')
+
             # save results
             frame_id = frame_count  # or make it incremental?
             results.append((frame_id + 1, online_tlwhs, online_ids))
 
             online_im = vis.plot_tracking(frame, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time)
+            logger.info(f'tracking plotted')
             if show_image:
+                logger.info(f'show image')
                 cv2.imshow('online_im', online_im)
             if save_dir is not None:
+                logger.info(f'save data')
                 cv2.imwrite(os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), online_im)
 
+            logger.info(f'wait key {wait_time}')
             key = cv2.waitKey(wait_time)
             key = chr(key % 128).lower()
             if key in [ord('q'), 202, 27]:  # 'q' or Esc or 'q' in russian layout
@@ -162,6 +168,7 @@ def eval_video(video_file,
                 wait_time = int(not wait_time)
 
             frame_count += 1
+            logger.info(f'done')
 
     except (KeyboardInterrupt, SystemExit) as e:
         logger.info('Caught %s: %s' % (e.__class__.__name__, e))
