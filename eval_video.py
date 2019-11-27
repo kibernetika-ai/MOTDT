@@ -85,11 +85,12 @@ def eval_video(**kwargs):
             if frames_limit is not None and frame_count > frames_limit:
                 logger.warn('frames limit {} reached'.format(frames_limit))
                 break
-            if frame_count % each_frame > 0:
-                continue
 
             # read each X bgr frame
             frame = cap.read()  # bgr
+            if frame_count % each_frame > 0:
+                continue
+
             if isinstance(frame, tuple):
                 frame = frame[1]
             if frame is None:
