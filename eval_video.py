@@ -171,19 +171,19 @@ if __name__ == '__main__':
     parser.add_argument(
         '--person_detect_model',
         type=str,
-        default='./data/faster_rcnn_resnet101_coco_2018_01_28/saved_model',
+        default='/assets/faster_rcnn_resnet101_coco_2018_01_28/saved_model',
         help='Person detection model',
     )
     parser.add_argument(
         '--squeezenet_ckpt',
         type=str,
-        default=None,
+        default='/assets/squeezenet_small40_coco_mot16_ckpt_10.h5',
         help='Squeezenet path',
     )
     parser.add_argument(
         '--googlenet_ckpt',
         type=str,
-        default=None,
+        default='/assets/googlenet_part8_all_xavier_ckpt_56.h5',
         help='Googlenet path',
     )
     parser.add_argument(
