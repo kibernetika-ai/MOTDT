@@ -180,12 +180,11 @@ class STrack(BaseTrack):
 
 class OnlineTracker(object):
 
-    def __init__(self, min_cls_score=0.4, min_ap_dist=0.64, max_time_lost=30, use_tracking=True, use_refind=True,
-                 squeezenet_ckpt=None, googlenet_ckpt=None):
+    def __init__(self, **kwargs):
 
-        self.min_cls_score = min_cls_score
-        self.min_ap_dist = min_ap_dist
-        self.max_time_lost = max_time_lost
+        self.min_cls_score = kwargs['tracker_min_cls_score']
+        self.min_ap_dist = kwargs['tracker_min_ap_dist']
+        self.max_time_lost = kwargs['tracker_max_time_lost']
 
         self.kalman_filter = KalmanFilter()
 
@@ -193,10 +192,10 @@ class OnlineTracker(object):
         self.lost_stracks = []      # type: list[STrack]
         self.removed_stracks = []   # type: list[STrack]
 
-        self.use_refind = use_refind
-        self.use_tracking = use_tracking
-        self.classifier = PatchClassifier(ckpt=squeezenet_ckpt)
-        self.reid_model = load_reid_model(ckpt=googlenet_ckpt)
+        self.use_refind = not kwargs['tracker_no_refind']
+        self.use_tracking = not kwargs['tracker_no_tracking']
+        self.classifier = PatchClassifier(ckpt=kwargs['tracker_squeezenet_ckpt'])
+        self.reid_model = load_reid_model(ckpt=kwargs['tracker_googlenet_ckpt'])
 
         self.frame_id = 0
 

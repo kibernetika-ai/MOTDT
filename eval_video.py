@@ -42,19 +42,11 @@ def detect_persons_tf(drv, frame, threshold = .5):
     return tlwhs, scores
 
 
-def eval_video(video_file,
-                each_frame=5,
-                person_detect_model='./data/faster_rcnn_resnet101_coco_2018_01_28/saved_model',
-                squeezenet_ckpt=None,
-                googlenet_ckpt=None,
-                frames_limit=None,
-                save_dir=None,
-                video_output=None,
-                show_image=True
-               ):
+def eval_video(**kwargs):
+
     logger.setLevel(logging.INFO)
 
-    cap = cv2.VideoCapture(video_file)
+    cap = cv2.VideoCapture(kwargs['video_source'])
     fps = cap.get(cv2.CAP_PROP_FPS)
     fourcc = cv2.VideoWriter_fourcc(*'MP4V')  # int(cap.get(cv2.CAP_PROP_FOURCC))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -62,13 +54,17 @@ def eval_video(video_file,
 
     frame_count = -1
     iter_count = 0
+    each_frame = kwargs['each_frame']
+    save_dir = kwargs['save_dir']
+    frames_limit = kwargs['frames_limit']
 
     video_writer = None
+    video_output = kwargs['video_output']
     if video_output is not None:
         logger.info(f'Write video to {video_output} ({width}x{height}, {fps/each_frame} fps) ...' )
         video_writer = cv2.VideoWriter(video_output, fourcc, fps / each_frame, frameSize=(width, height))
 
-    tracker = OnlineTracker(squeezenet_ckpt=squeezenet_ckpt, googlenet_ckpt=googlenet_ckpt)
+    tracker = OnlineTracker(**kwargs)
     timer = Timer()
     results = []
     wait_time = 1
@@ -77,6 +73,7 @@ def eval_video(video_file,
 
     logger.info(f'init person detection driver...')
     person_detect_driver = drv()
+    person_detect_model = kwargs['person_detect_model']
     logger.info(f'loading person detection model {person_detect_model}...')
     person_detect_driver.load_model(person_detect_model)
     logger.info(f'person detection model {person_detect_model} loaded')
@@ -131,7 +128,7 @@ def eval_video(video_file,
                     1,
                 )
 
-            if show_image:
+            if kwargs['show_image']:
                 cv2.imshow('online_im', online_im)
             if save_dir is not None:
                 save_to = os.path.join(save_dir, '{:05d}.jpg'.format(frame_id))
@@ -175,18 +172,6 @@ if __name__ == '__main__':
         help='Person detection model',
     )
     parser.add_argument(
-        '--squeezenet_ckpt',
-        type=str,
-        default='/assets/squeezenet_small40_coco_mot16_ckpt_10.h5',
-        help='Squeezenet path',
-    )
-    parser.add_argument(
-        '--googlenet_ckpt',
-        type=str,
-        default='/assets/googlenet_part8_all_xavier_ckpt_56.h5',
-        help='Googlenet path',
-    )
-    parser.add_argument(
         '--frames_limit',
         type=int,
         default=None,
@@ -210,17 +195,45 @@ if __name__ == '__main__':
         default=None,
         help='Save result video to dir',
     )
-    args = parser.parse_args()
-
-    eval_video(
-        video_file=args.video_source,
-        each_frame=args.each_frame,
-        person_detect_model=args.person_detect_model,
-        squeezenet_ckpt=args.squeezenet_ckpt,
-        googlenet_ckpt=args.googlenet_ckpt,
-        frames_limit=args.frames_limit,
-        save_dir=args.save_dir,
-        video_output=args.video_output,
-        show_image=False,
+    parser.add_argument(
+        '--tracker_min_cls_score',
+        type=float,
+        default=0.4,
     )
+    parser.add_argument(
+        '--tracker_min_ap_dist',
+        type=float,
+        default=0.64,
+    )
+    parser.add_argument(
+        '--tracker_max_time_lost',
+        type=int,
+        default=30,
+    )
+    parser.add_argument(
+        '--tracker_squeezenet_ckpt',
+        type=str,
+        default='/assets/squeezenet_small40_coco_mot16_ckpt_10.h5',
+        help='Squeezenet path',
+    )
+    parser.add_argument(
+        '--tracker_googlenet_ckpt',
+        type=str,
+        default='/assets/googlenet_part8_all_xavier_ckpt_56.h5',
+        help='Googlenet path',
+    )
+    parser.add_argument(
+        '--tracker_no_tracking',
+        action='store_true',
+    )
+    parser.add_argument(
+        '--tracker_no_refind',
+        action='store_true',
+    )
+
+    args = parser.parse_args()
+    kwargs = vars(args)
+    kwargs['show_image'] = False
+
+    eval_video(**kwargs)
 
