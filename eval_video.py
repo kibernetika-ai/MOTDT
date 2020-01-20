@@ -1,8 +1,12 @@
 import argparse
+import base64
 import os
 
 import cv2
 import logging
+
+import jinja2
+
 from tracker.mot_tracker import OnlineTracker
 
 from utils import visualization as vis
@@ -12,6 +16,58 @@ from utils.timer import Timer
 
 import numpy as np
 from ml_serving.drivers import driver
+
+
+template = """
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 7px;
+}
+table tr:nth-child(even) {
+  background-color: #eee;
+}
+table tr:nth-child(odd) {
+ background-color: #fff;
+}
+body {
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Noto Sans", "Ubuntu", "Droid Sans", "Helvetica Neue", sans-serif;
+}
+</style>
+</head>
+<body>
+<h1 style="text-align:center">Persons</h1>
+<table style="width:100%">
+  <tr>
+    <th>##</th>
+    <th>Tracker index</th> 
+    <th>Images</th> 
+    <th>Duration, sec</th>
+    <th>Intervals, sec</th>
+  </tr>
+  {% for person in data %}
+  <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ person['index'] }}</td>
+      <td>
+      {% for img in person['images'] %}
+        <img src="data:image/jpeg;base64,{{ img }}"/>
+      {% endfor %}
+      </td>
+      <td>{{ person['duration_sec'] }}</td>
+      <td>{{ person['intervals_str'] }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</body>
+</html>
+"""
 
 
 def detect_persons_tf(drv, frame, threshold = .5):
@@ -64,6 +120,11 @@ def eval_video(**kwargs):
         logger.info(f'Write video to {video_output} ({width}x{height}, {fps/each_frame} fps) ...' )
         video_writer = cv2.VideoWriter(video_output, fourcc, fps / each_frame, frameSize=(width, height))
 
+    write_report_to = None
+    data = {}
+    if kwargs['report_output']:
+        write_report_to = kwargs['report_output']
+
     tracker = OnlineTracker(**kwargs)
     timer = Timer()
     results = []
@@ -113,6 +174,33 @@ def eval_video(**kwargs):
                 online_ids.append(t.track_id)
             timer.toc()
 
+            if write_report_to:
+
+                for i, id in enumerate(online_ids):
+                    if id not in data:
+                        data[id] = {
+                            'intervals': [],
+                            'images': [],
+                            'last_image': None,
+                        }
+                    di = data[id]['intervals']
+                    if len(di) == 0 or di[-1][1] < frame_count - each_frame:
+                        if len(di) > 0 and di[-1][0] == di[-1][1]:
+                            di = di[:-1]
+                        di.append([frame_count, frame_count])
+                    else:
+                        di[-1][1] = frame_count
+                    if not data[id]['last_image'] or data[id]['last_image'] < frame_count - fps * 10:
+                        data[id]['last_image'] = frame_count
+                        tlwh = [max(0, int(o)) for o in online_tlwhs[i]]
+                        pers_img = frame[tlwh[1]:tlwh[1]+tlwh[3], tlwh[0]:tlwh[0]+tlwh[2]].copy()
+                        if max(pers_img.shape[0], pers_img.shape[1]) > 100:
+                            coef = max(pers_img.shape[0], pers_img.shape[1]) / 100
+                            pers_img = cv2.resize(pers_img,
+                                                  (int(pers_img.shape[1] / coef), int(pers_img.shape[0] / coef)))
+                        _, pers_img = cv2.imencode('.jpeg', pers_img)
+                        data[id]['images'].append(base64.b64encode(pers_img).decode())
+
             # save results
             frame_id = frame_count  # or make it incremental?
             results.append((frame_id + 1, online_tlwhs, online_ids))
@@ -157,6 +245,26 @@ def eval_video(**kwargs):
             logger.info('Written video to %s.' % video_output)
             video_writer.release()
 
+        if write_report_to:
+
+            for i in data:
+                di = data[i]
+                di['index'] = i
+                di['duration'] = sum([i[1] - i[0] for i in di['intervals']])
+                di['duration_sec'] = '{:.2f}'.format(di['duration'] / fps)
+                di['intervals_str'] = ', '.join(
+                    ['{:.2f}-{:.2f}'.format(i[0] / fps, i[1] / fps) for i in di['intervals']])
+
+            data = data.values()
+            data = sorted(data, key=lambda x: x['duration'], reverse=True)
+
+            # prepare html
+            tpl = jinja2.Template(template)
+
+            html = tpl.render(data=data)
+            with open(write_report_to, 'w') as f:
+                f.write(html)
+
 
 if __name__ == '__main__':
 
@@ -195,6 +303,12 @@ if __name__ == '__main__':
         type=str,
         default=None,
         help='Save result video to dir',
+    )
+    parser.add_argument(
+        '--report_output',
+        type=str,
+        default=None,
+        help='Save html report to file',
     )
     parser.add_argument(
         '--tracker_min_cls_score',
