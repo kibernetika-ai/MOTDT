@@ -17,6 +17,11 @@ from utils.timer import Timer
 import numpy as np
 from ml_serving.drivers import driver
 
+try:
+    from mlboardclient.api import client
+except ImportError:
+    client = None
+
 
 template = """
 <!DOCTYPE html>
@@ -68,6 +73,11 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Noto Sans
 </body>
 </html>
 """
+
+
+def update_data(data, use_mlboard, mlboard):
+    if use_mlboard and mlboard:
+        mlboard.update_task_info(data)
 
 
 def detect_persons_tf(drv, frame, threshold = .5):
@@ -265,8 +275,23 @@ def eval_video(**kwargs):
             with open(write_report_to, 'w') as f:
                 f.write(html)
 
+            update_data({'#documents.persons.html': html}, use_mlboard, mlboard)
+
 
 if __name__ == '__main__':
+
+    use_mlboard = False
+    mlboard = None
+    if client:
+        mlboard = client.Client()
+        try:
+            mlboard.apps.get()
+        except Exception:
+            mlboard = None
+            logger.info('Do not use mlboard.')
+        else:
+            logger.info('Use mlboard parameters logging.')
+            use_mlboard = True
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
